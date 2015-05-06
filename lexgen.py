@@ -1,78 +1,120 @@
 import codecs
 import csv
 import datetime
-import facepp
 import json
-import genderator
+import operator
 import os
+
+import genderator
+
 
 MINIMAL_CONFIDENCE = 0.75
 
 path = os.path.dirname(__file__)
-
 guesser = genderator.Parser()
 
-females = codecs.open(os.path.join(path, 'data/females.tsv'), 'w', 'UTF-8')
-males = codecs.open(os.path.join(path, 'data/males.tsv'), 'w', 'UTF-8')
+females_file = codecs.open(os.path.join(path, 'data/females.tsv'), 'w', 'UTF-8')
+males_file = codecs.open(os.path.join(path, 'data/males.tsv'), 'w', 'UTF-8')
+females_writer = csv.writer(females_file, delimiter='\t')
+males_writer = csv.writer(males_file, delimiter='\t')
 
-females_writer = csv.writer(females, delimiter='\t')
-males_writer = csv.writer(males, delimiter='\t')
+female_tweets = 0
+male_tweets = 0
+tweets_processed = 0
+tweets_classified = 0
 
-not_enough_confidence = 0
-tweets_count = 0
-females_count = 0
-males_count = 0
+female_users = {}
+male_users = {}
 
-api = facepp.API('14593ac430ff440a9fdc92e361efea71', 'RPzUPKrotSUztSW8QRk0SfIT5CPbXX5C', 'http://api.us.faceplusplus.com/')
 
-users = {}
+def classify_tweet(user_screen_name, text, gender, confidence):
+    global female_tweets, male_tweets, tweets_classified
 
-time = datetime.datetime.now()
-with codecs.open(os.path.join(path, 'data/geolocated-asturias.json'), 'r', 'UTF-8') as file:
-    for line in file:
-        tweets_count += 1
-        tweet = json.loads(line)
-        if tweet['user']['screen_name'] in users:
-            data = users[tweet['user']['screen_name']][:]
-            data.append(tweet['text'])
-            if users[tweet['user']['screen_name']][2] == 'Male':
-                males_writer.writerow(data)
-                males_count += 1
-            else:
-                females_writer.writerow(data)
-                females_count += 1
+    fields = [user_screen_name, confidence, text]
+
+    if gender == 'Female':
+        if user_screen_name in female_users:
+            female_users[user_screen_name] += 1
         else:
-            prediction = guesser.guess_gender(tweet['user']['name'])
-            if prediction is not None and prediction['surnames']:
-                gender = prediction['gender']
-                confidence = prediction['confidence']
+            female_users[user_screen_name] = 1
+        females_writer.writerow(fields)
+        female_tweets += 1
+    else:
+        if user_screen_name in male_users:
+            male_users[user_screen_name] += 1
+        else:
+            male_users[user_screen_name] = 1
+        males_writer.writerow(fields)
+        male_tweets += 1
 
-                # if confidence < MINIMAL_CONFIDENCE or not prediction['surnames']:
-                #     answer = api.detection.detect(url=tweet['user']['profile_image_url'].replace('_normal', ''))
-                #     if len(answer['face']) == 1:
-                #         temp_gender = answer['face'][0]['attribute']['gender']['value']
-                #         temp_confidence = answer['face'][0]['attribute']['gender']['confidence']
-                #         if gender == temp_gender and temp_confidence >= MINIMAL_CONFIDENCE:
-                #             gender = temp_gender
-                #             confidence = temp_confidence
+    tweets_classified += 1
+
+
+def classify_tweets():
+    print('Classifying tweets')
+
+    global tweets_processed
+    millis_elapsed = 0
+
+    # Count lines
+    total_tweets = 0
+    with open(os.path.join(path, 'data/geolocated-asturias.json'), 'r') as file:
+        for line in file:
+            total_tweets += 1
+    file.close()
+
+    print(total_tweets, 'tweets found')
+
+    time = datetime.datetime.now()
+    with open(os.path.join(path, 'data/geolocated-asturias.json'), 'r') as file:
+        for line in file:
+            tweets_processed += 1
+            tweet = json.loads(line)
+            user_name = tweet['user']['name']
+            user_screen_name = tweet['user']['screen_name']
+
+            prediction = guesser.guess_gender(user_name)
+
+            if prediction is not None and prediction['surnames']:
+                confidence = prediction['confidence']
+                gender = prediction['gender']
 
                 if confidence >= MINIMAL_CONFIDENCE:
-                    classification_line = [tweet['user']['name'], tweet['user']['screen_name'], confidence, tweet['text']]
-                    users[tweet['user']['screen_name']] = [tweet['user']['name'], tweet['user']['screen_name'], gender, confidence]
-                    if gender == 'Male':
-                        males_writer.writerow(classification_line)
-                        males_count += 1
-                    else:
-                        females_writer.writerow(classification_line)
-                        females_count += 1
-        if tweets_count % 1000 == 0:
-            print(tweets_count, 'processed. Time employed:', datetime.datetime.now() - time)
-            time = datetime.datetime.now()
+                    classify_tweet(user_screen_name, tweet['text'], gender, confidence)
 
-females.close()
-males.close()
-print(len(users))
-print(tweets_count, 'tweets parsed')
-print(females_count, 'tweets from females')
-print(males_count, 'tweets from males')
-print(not_enough_confidence, 'with not enough confidence')
+            if tweets_processed > 1 and tweets_processed % 50000 == 0:
+                millis_elapsed += (datetime.datetime.now() - time).total_seconds() * 1000
+                millis_to_finish = (millis_elapsed / tweets_processed) * (total_tweets - tweets_processed)
+                time = datetime.datetime.now()
+                print(tweets_processed, 'processed. Estimated seconds to finish:', millis_to_finish / 1000,
+                      '(' + str(time + datetime.timedelta(milliseconds=millis_to_finish)) + ')')
+
+    file.close()
+    females_file.close()
+    males_file.close()
+
+
+def generate_top_files():
+    print('\nGenerating top files\n')
+
+    with codecs.open(os.path.join(path, 'data/top_females.tsv'), 'w', 'UTF-8') as file:
+        writer = csv.writer(file, delimiter='\t')
+        for (screen_name, count) in sorted(female_users.items(), key=operator.itemgetter(1), reverse=True):
+            writer.writerow([screen_name, count])
+    file.close()
+
+    with codecs.open(os.path.join(path, 'data/top_males.tsv'), 'w', 'UTF-8') as file:
+        writer = csv.writer(file, delimiter='\t')
+        for (screen_name, count) in sorted(male_users.items(), key=operator.itemgetter(1), reverse=True):
+            writer.writerow([screen_name, count])
+    file.close()
+
+
+classify_tweets()
+generate_top_files()
+
+print(tweets_classified, 'tweets classified')
+print(female_tweets, 'tweets from females')
+print(male_tweets, 'tweets from males')
+print(len(female_users), 'female users')
+print(len(male_users), 'male users')
