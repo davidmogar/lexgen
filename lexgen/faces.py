@@ -60,6 +60,13 @@ class Faces:
             pass
 
     def _store_answer(self, profile_image, answer):
+        """
+        Stores an answer from Face++ into the cache file.
+
+        Params:
+            profile_image (string): URL of the profile image used in the request.
+            answer (dict): Answer returned by Face++.
+        """
         with open(CACHE_FILE, 'a+', encoding='utf-8', newline='') as file:
             writer = csv.writer(file, delimiter='\t')
             writer.writerow([profile_image, answer])
