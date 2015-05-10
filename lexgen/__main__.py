@@ -1,3 +1,3 @@
-from .legen import main
+from .lexgen import main
 
 main()
