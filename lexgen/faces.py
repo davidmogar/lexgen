@@ -4,7 +4,7 @@ import os
 
 from .lib import facepp
 
-CACHE_FILE = os.path.join(os.path.dirname(__file__), 'data/facepp_cache.tsv')
+CACHE_FILE = os.path.join(os.path.dirname(__file__), '../data/facepp_cache.tsv')
 
 
 class Faces:
