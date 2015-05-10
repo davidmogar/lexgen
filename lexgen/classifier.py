@@ -51,18 +51,21 @@ class ChickSexer:
                 tweets_processed += 1
                 prediction = self._genderator.guess_gender(tweet['user']['name'])
 
-                if prediction is not None and (not require_surnames or prediction['surnames']):
-                    confidence = prediction['confidence']
-                    gender = prediction['gender']
+                if prediction is not None:
+                    surnames = prediction['surnames']
 
-                    if detect_faces and (confidence < min_confidence):
-                        confidence = self._apply_face_recognition(gender, confidence, tweet)
+                    if not require_surnames or surnames:
+                        confidence = prediction['confidence']
+                        gender = prediction['gender']
 
-                    if confidence >= min_confidence:
-                        self._classify_tweet(tweet['user']['screen_name'], tweet['text'], gender, confidence)
+                        if detect_faces and (confidence < min_confidence or not surnames):
+                            confidence = self._apply_face_recognition(gender, tweet)
 
-                if tweets_processed > 1 and tweets_processed % tweets_until_time == 0:
-                    self._show_remaining_time(tweets_processed)
+                        if confidence >= min_confidence:
+                            self._classify_tweet(tweet['user']['screen_name'], tweet['text'], gender, confidence)
+
+                    if tweets_processed > 1 and tweets_processed % tweets_until_time == 0:
+                        self._show_remaining_time(tweets_processed)
 
         self.stats['tweets_processed'] = tweets_processed
         self._females_file.close()
@@ -77,6 +80,29 @@ class ChickSexer:
         self.stats['users'] = females + males
 
         print(dict(self.stats))
+
+    def _apply_face_recognition(self, gender, tweet):
+        """
+        Apply facial recognition over the profile image of tweet's author.
+
+        If the gender match the confidence value is returned. If there is nothing to return the function return 0.
+        The idea is to use facial recognition as a second verification step when the previous is not enough so it is
+        a better idea to replace a previous high confidence than use it as a valid value.
+
+        Params:
+            gender: Original gender detected.
+            tweet: Tweet being processed.
+
+        Returns:
+            New confidence if altered and the original one if not.
+        """
+        profile_image = tweet['user']['profile_image_url'].replace('_normal', '')
+        answer = self._faces.get_gender_and_confidence(profile_image)
+        if answer is not None:
+            face_gender, face_confidence = answer
+            if face_gender == gender:
+                return face_confidence
+        return 0
 
     def _classify_tweet(self, user_screen_name, text, gender, confidence):
         """
@@ -101,47 +127,6 @@ class ChickSexer:
 
         self.stats['tweets_classified'] += 1
 
-    def _apply_face_recognition(self, gender, confidence, tweet):
-        """
-        Apply facial recognition over the profile image of tweet's author.
-
-        If the gender match and the new confidence is higher, the confidence value is updated.
-
-        Params:
-            gender: Original gender detected.
-            confidence: Original confidence.
-            tweet: Tweet being processed.
-
-        Returns:
-            New confidence if altered and the original one if not.
-        """
-        profile_image = tweet['user']['profile_image_url'].replace('_normal', '')
-        answer = self._faces.get_gender_and_confidence(profile_image)
-        if answer is not None:
-            face_gender, face_confidence = answer
-            if face_gender == gender and face_confidence > confidence:
-                confidence = face_confidence
-        return confidence
-
-    def _validate_file(self, dataset):
-        """
-        Validates file to be sure that all lines are valid JSON objects and store the lines count.
-
-        Params:
-            dataset (string): Path of the dataset file.
-        """
-        print('Validating dataset')
-        tweets_counter = 0
-        with open(dataset, encoding='utf-8') as file:
-            for line in file:
-                try:
-                    json.loads(line)
-                except ValueError:
-                    raise ValueError('The specified dataset contains invalid JSON objects')
-
-                tweets_counter += 1
-        self.stats['tweets'] = tweets_counter
-
     def _get_tweets_objects(self, file):
         """
         Filter file lines getting only valid JSON objects.
@@ -164,8 +149,8 @@ class ChickSexer:
             directory (string): Directory where to save results.
         """
         print('Preparing result files')
-        self._females_file = open(os.path.join(path, 'females.tsv'), 'w+', encoding='utf-8')
-        self._males_file = open(os.path.join(path, 'males.tsv'), 'w+', encoding='utf-8')
+        self._females_file = open(os.path.join(path, 'females.tsv'), 'w+', encoding='utf-8', newline='')
+        self._males_file = open(os.path.join(path, 'males.tsv'), 'w+', encoding='utf-8', newline='')
         self._females_writer = csv.writer(self._females_file, delimiter='\t')
         self._males_writer = csv.writer(self._males_file, delimiter='\t')
 
@@ -188,3 +173,22 @@ class ChickSexer:
         output = percentage_processed + '% processed, ' + seconds_to_finish + ' seconds to finish (' + str(finishing_date) + ')'
         self._characters_to_clean = len(output)
         print(output, end='\r')
+
+    def _validate_file(self, dataset):
+        """
+        Validates file to be sure that all lines are valid JSON objects and store the lines count.
+
+        Params:
+            dataset (string): Path of the dataset file.
+        """
+        print('Validating dataset')
+        tweets_counter = 0
+        with open(dataset, encoding='utf-8') as file:
+            for line in file:
+                try:
+                    json.loads(line)
+                except ValueError:
+                    raise ValueError('The specified dataset contains invalid JSON objects')
+
+                tweets_counter += 1
+        self.stats['tweets'] = tweets_counter
