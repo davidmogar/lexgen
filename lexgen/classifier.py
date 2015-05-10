@@ -7,6 +7,7 @@ import os
 
 from .faces import Faces
 
+
 BASE_DIR = os.path.dirname(__file__)
 
 
@@ -23,31 +24,44 @@ class ChickSexer:
         self._millis_elapsed = 0
         self._last_measured_time = 0
 
-    def classify(self, dataset, path, detect_faces=False, min_confidence=0.75, tweets_until_stats=1000):
+        self._characters_to_clean = 0
+
+    def classify(self, dataset, path, detect_faces=False, min_confidence=0.75, require_surnames=False,
+                 tweets_until_time=1000):
+        """
+        Classify tweets in the given dataset spliting them in two groups, females and males.
+
+        Params:
+            dataset (string): Path of the dataset to process.
+            path (string): Path whwere to save results.
+            detect_faces (boolean): A value indicating if facial recognition should be performed.
+            min_confidence (float): Minimal confidence to consider a gender prediction valid .
+            require_surnames (boolean): A value indicating whether to require surnames or not.
+            tweets_until_stats: Number of tweets to process between each time report.
+        """
         self._validate_file(dataset)
         self._prepare_result_files(path)
         self._millis_elapsed = 0
         self._last_measured_time = datetime.datetime.now()
 
-        tweets_processed = 0
-
         print('Starting dataset classification')
+        tweets_processed = 0
         with open(dataset, encoding='utf-8') as file:
             for tweet in self._get_tweets_objects(file):
                 tweets_processed += 1
                 prediction = self._genderator.guess_gender(tweet['user']['name'])
 
-                if prediction is not None:
+                if prediction is not None and (not require_surnames or prediction['surnames']):
                     confidence = prediction['confidence']
                     gender = prediction['gender']
 
-                    if detect_faces and (confidence < min_confidence or not prediction['surnames']):
+                    if detect_faces and (confidence < min_confidence):
                         confidence = self._apply_face_recognition(gender, confidence, tweet)
 
                     if confidence >= min_confidence:
                         self._classify_tweet(tweet['user']['screen_name'], tweet['text'], gender, confidence)
 
-                if tweets_processed > 1 and tweets_processed % tweets_until_stats == 0:
+                if tweets_processed > 1 and tweets_processed % tweets_until_time == 0:
                     self._show_remaining_time(tweets_processed)
 
         self.stats['tweets_processed'] = tweets_processed
@@ -55,13 +69,25 @@ class ChickSexer:
         self._males_file.close()
 
     def show_stats(self):
+        """
+        Show stored stats.
+        """
         females = self.stats['females'] = len(self.females)
         males = self.stats['males'] = len(self.males)
         self.stats['users'] = females + males
 
-        print(self.stats)
+        print(dict(self.stats))
 
     def _classify_tweet(self, user_screen_name, text, gender, confidence):
+        """
+        Classify a tweet in one of the two result datasets (females or males).
+
+        Params:
+            user_screen_name (string): User's screen name as found in JSON object.
+            text (string): Tweet's text.
+            gender (string): User's gender.
+            confidence (string): Calculated confidence.
+        """
         fields = [user_screen_name, confidence, text]
 
         if gender == 'Female':
@@ -98,6 +124,12 @@ class ChickSexer:
         return confidence
 
     def _validate_file(self, dataset):
+        """
+        Validates file to be sure that all lines are valid JSON objects and store the lines count.
+
+        Params:
+            dataset (string): Path of the dataset file.
+        """
         print('Validating dataset')
         tweets_counter = 0
         with open(dataset, encoding='utf-8') as file:
@@ -111,6 +143,12 @@ class ChickSexer:
         self.stats['tweets'] = tweets_counter
 
     def _get_tweets_objects(self, file):
+        """
+        Filter file lines getting only valid JSON objects.
+
+        Params:
+            file (File): File to filter.
+        """
         for line in file:
             try:
                 yield json.loads(line)
@@ -132,8 +170,21 @@ class ChickSexer:
         self._males_writer = csv.writer(self._males_file, delimiter='\t')
 
     def _show_remaining_time(self, tweets_processed):
+        """
+        Print remaining time to finish classification.
+
+        Params:
+            tweets_processed (int): Number of tweets processed.
+        """
         self._millis_elapsed += (datetime.datetime.now() - self._last_measured_time).total_seconds() * 1000
         millis_to_finish = (self._millis_elapsed / tweets_processed) * (self.stats['tweets'] - tweets_processed)
         self._last_measured_time = datetime.datetime.now()
-        print(tweets_processed, 'processed. Estimated seconds to finish:', millis_to_finish / 1000,
-              '(' + str(self._last_measured_time + datetime.timedelta(milliseconds=millis_to_finish)) + ')', end='\r')
+
+        seconds_to_finish = '{:.2f}'.format(millis_to_finish / 1000)
+        percentage_processed = '{:.2f}'.format(tweets_processed / self.stats['tweets'] * 100)
+        finishing_date = self._last_measured_time + datetime.timedelta(milliseconds=millis_to_finish)
+
+        print(' ' * self._characters_to_clean, end='\r')
+        output = percentage_processed + '% processed, ' + seconds_to_finish + ' seconds to finish (' + str(finishing_date) + ')'
+        self._characters_to_clean = len(output)
+        print(output, end='\r')
