@@ -9,7 +9,7 @@ MIN_CONFIDENCE = 0.75
 
 
 def create_results_path(args):
-    path = 'data/' + ('faces' if args.faces else 'no-faces') +\
+    path = '../data/' + ('faces' if args.faces else 'no-faces') +\
            ('-surnames' if args.surnames else 'no-surnames') + '-confidence-' + str(args.confidence)
     path = os.path.join(BASE_DIR, path, str(datetime.datetime.now().timestamp()))
     os.makedirs(path)
