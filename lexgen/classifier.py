@@ -58,7 +58,7 @@ class ChickSexer:
                         confidence = prediction['confidence']
                         gender = prediction['gender']
 
-                        if detect_faces and (confidence < min_confidence or not surnames):
+                        if detect_faces and (confidence < min_confidence or (not surnames and require_surnames)):
                             confidence = self._apply_face_recognition(gender, tweet)
 
                         if confidence >= min_confidence:
