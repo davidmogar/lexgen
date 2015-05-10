@@ -9,7 +9,8 @@ MIN_CONFIDENCE = 0.75
 
 
 def create_results_path(args):
-    path = 'data/' + ('faces' if args.faces else 'no-faces') + '-confidence-' + str(args.confidence)
+    path = 'data/' + ('faces' if args.faces else 'no-faces') +\
+           ('-surnames' if args.surnames else 'no-surnames') + '-confidence-' + str(args.confidence)
     path = os.path.join(BASE_DIR, path, str(datetime.datetime.now().timestamp()))
     os.makedirs(path)
     return path
@@ -26,6 +27,7 @@ def parse_arguments():
     parser.add_argument('dataset', help='file with JSON objects to be processed')
     parser.add_argument('--faces', action='store_true', help='apply facial recognition over profile images')
     parser.add_argument('--confidence', metavar='N', type=float, default=0.75, help="minimal confidence for a valid recognition")
+    parser.add_argument('--surnames', action='store_true', help='require fullnames (at least one surname)')
     parser.add_argument('--overwrite', action='store_true', help='overwrite results directory if exists')
 
     return parser.parse_args()
@@ -57,7 +59,7 @@ def main():
     results_path = create_results_path(args)
 
     classifier = ChickSexer()
-    classifier.classify(args.dataset, results_path, args.faces, args.confidence)
+    classifier.classify(args.dataset, results_path, args.faces, args.confidence, args.surnames)
     classifier.show_stats()
 
 
