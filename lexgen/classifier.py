@@ -17,14 +17,12 @@ class ChickSexer:
         self._faces = Faces('14593ac430ff440a9fdc92e361efea71', 'RPzUPKrotSUztSW8QRk0SfIT5CPbXX5C')
         self._genderator = genderator.Parser()
 
-        self.females = collections.defaultdict(int)
-        self.males = collections.defaultdict(int)
         self.stats = collections.defaultdict(int)
 
         self._millis_elapsed = 0
         self._last_measured_time = 0
 
-        self._characters_to_clean = 0
+        self._previous_output_len = 0
 
     def classify(self, dataset, path, detect_faces=False, min_confidence=0.75, require_surnames=False,
                  tweets_until_time=1000):
@@ -75,10 +73,7 @@ class ChickSexer:
         """
         Show stored stats.
         """
-        females = self.stats['females'] = len(self.females)
-        males = self.stats['males'] = len(self.males)
-        self.stats['users'] = females + males
-
+        self.stats['users'] = self.stats['females'] + self.stats['males']
         print(dict(self.stats))
 
     def _apply_face_recognition(self, gender, tweet):
@@ -117,11 +112,9 @@ class ChickSexer:
         fields = [user_screen_name, confidence, text]
 
         if gender == 'Female':
-            self.females[user_screen_name] += 1
             self.stats['female_tweets'] += 1
             self._females_writer.writerow(fields)
         else:
-            self.males[user_screen_name] += 1
             self.stats['male_tweets'] += 1
             self._males_writer.writerow(fields)
 
@@ -169,10 +162,10 @@ class ChickSexer:
         percentage_processed = '{:.2f}'.format(tweets_processed / self.stats['tweets'] * 100)
         finishing_date = self._last_measured_time + datetime.timedelta(milliseconds=millis_to_finish)
 
-        print(' ' * self._characters_to_clean, end='\r')
         output = percentage_processed + '% processed, ' + seconds_to_finish + ' seconds to finish (' + str(finishing_date) + ')'
-        self._characters_to_clean = len(output)
-        print(output, end='\r')
+        characters_to_clean = self._previous_output_len - len(output)
+        self._previous_output_len = len(output)
+        print(output, '' * characters_to_clean, end='\r')
 
     def _validate_file(self, dataset):
         """
