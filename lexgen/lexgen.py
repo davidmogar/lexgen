@@ -129,9 +129,9 @@ def get_word_frequencies(dataset):
         for line in file:
             fields = line.split('\t')
             if len(fields) == 3:
-                for word in normalizr.normalize(fields[2], normalizations).split():
+                for word in normalizr.normalize(fields[2].lower(), normalizations).split():
                     total_words += 1
-                    word_frequencies[word.lower()] += 1
+                    word_frequencies[word] += 1
 
     return word_frequencies, total_words
 
@@ -213,7 +213,7 @@ def test_lexicon(dataset, lexicon, expected_female):
             fields = line.split('\t')
             if len(fields) == 3:
                 female_words, male_words = 0, 0
-                for word in normalizr.normalize(fields[2], normalizations).split():
+                for word in normalizr.normalize(fields[2].lower(), normalizations).split():
                     if word in lexicon:
                         if lexicon[word] > 0:
                             female_words += 1
