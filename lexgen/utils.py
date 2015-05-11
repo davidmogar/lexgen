@@ -1,4 +1,5 @@
 import math
+import re
 
 
 def percentile(values, percent, key=lambda x: x):
@@ -82,3 +83,7 @@ def rootLogLikelihoodRatio(a, b, c, d):
         result = -result
 
     return result
+
+
+def remove_twitter_mentions(text):
+    return re.sub(r'@([A-Za-z0-9_]+)', '', text)
