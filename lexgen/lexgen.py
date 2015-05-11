@@ -20,7 +20,6 @@ def create_results_path(args):
     Return:
         Path of the created directory.
     """
-    exit()
     path = '../data/'
     path += 'f' if args.faces else 'nf'
     path += '-s' if args.surnames else '-ns'
