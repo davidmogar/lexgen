@@ -34,6 +34,18 @@ class Trimmer:
         self._split_dataset(self._females, os.path.join(self._datasets_path, 'females.tsv'), training_set_percentage)
         self._split_dataset(self._males, os.path.join(self._datasets_path, 'males.tsv'), training_set_percentage)
 
+    def _load_users_stats(self):
+        """
+        Load user stats from generated datasets.
+        """
+        with open(os.path.join(self._datasets_path, 'females.tsv'), 'r', encoding='utf-8') as file:
+            for line in file:
+                self._females[line.split('\t')[0]] += 1
+
+        with open(os.path.join(self._datasets_path, 'males.tsv'), 'r', encoding='utf-8') as file:
+            for line in file:
+                self._males[line.split('\t')[0]] += 1
+
     def _split_dataset(self, users, dataset, training_set_percentage):
         """
         Split a dataset into training and test datasets.
@@ -57,15 +69,3 @@ class Trimmer:
                     else:
                         test_file.write(line)
                     valid_tweets_processed += 1
-
-    def _load_users_stats(self):
-        """
-        Load user stats from generated datasets.
-        """
-        with open(os.path.join(self._datasets_path, 'females.tsv'), 'r', encoding='utf-8') as file:
-            for line in file:
-                self._females[line.split('\t')[0]] += 1
-
-        with open(os.path.join(self._datasets_path, 'males.tsv'), 'r', encoding='utf-8') as file:
-            for line in file:
-                self._males[line.split('\t')[0]] += 1
