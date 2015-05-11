@@ -44,6 +44,7 @@ def create_results_path(args):
     path += '-s' if args.surnames else '-ns'
     path += '-c' + str(args.confidence)
     path += '-ro' if args.remove_outliers else '-nro'
+    path += '-lp' + str(args.lexicon_percentage)
     path = os.path.join(BASE_DIR, path, str(datetime.datetime.now().timestamp()))
 
     os.makedirs(path)
@@ -147,6 +148,8 @@ def parse_arguments():
     parser.add_argument('--faces', action='store_true', help='apply facial recognition over profile images')
     parser.add_argument('--confidence', metavar='N', type=float, default=0.75,
                         help="minimal confidence for a valid recognition (default=0.75)")
+    parser.add_argument('--lexicon-percentage', metavar='N', type=float, default=0.5,
+                        help="Percentage of words to get from the generated lexicon")
     parser.add_argument('--surnames', action='store_true', help='require fullnames (at least one surname)')
     parser.add_argument('--remove-outliers', action='store_true',
                         help='remove outliers before generate training and test datasets')
@@ -266,7 +269,7 @@ def main():
     trimmer.split_datasets(0.8)
 
     lexicon = generate_lexicon(results_path)
-    lexicon = filter_lexicon(lexicon, 0.5)
+    lexicon = filter_lexicon(lexicon, args.lexicon_percentage)
     persist_lexicon(results_path, lexicon)
     females_pr, females_ex = test_lexicon(os.path.join(results_path, 'females-test.tsv'), lexicon, True)
     males_pr, males_ex = test_lexicon(os.path.join(results_path, 'males-test.tsv'), lexicon, False)
