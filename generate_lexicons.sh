@@ -3,7 +3,7 @@
 # Script to generate multiple datasets while I'm sleeping ;)
 
 python3 -m lexgen geolocated-asturias.json --faces --surnames --confidence 0.75 --lexicon-percentage 0.5 --remove-outliers
-python3 -m lexgen geolocated-asturias.json geolocated-asturias.json --faces --surnames --confidence 0.75 --lexicon-percentage 0.5 --remove-outliers
+python3 -m lexgen geolocated-asturias.json --faces --surnames --confidence 0.75 --lexicon-percentage 0.5 --remove-outliers
 python3 -m lexgen geolocated-asturias.json --faces --surnames --confidence 0.75 --lexicon-percentage 0.5 --remove-outliers
 
 python3 -m lexgen geolocated-asturias.json --faces --surnames --confidence 0.9 --lexicon-percentage 0.5 --remove-outliers
