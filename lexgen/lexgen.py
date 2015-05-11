@@ -191,7 +191,8 @@ def persist_test_results(path, females_pr, females_ex, males_pr, males_ex):
     results['males_exhaustiveness'] = males_ex
 
     with open(os.path.join(path, '../..', 'tests.tsv'), 'a+', encoding='utf-8') as file:
-        file.write(path[path.rfind('/') + 1:] + '\t' + json.dumps(results) + '\n')
+        path = os.path.normpath(path).replace('\\', '/')
+        file.write(path[path.rfind('/', 0, path.rfind('/')) + 1:] + '\t' + json.dumps(results) + '\n')
 
 
 def test_lexicon(dataset, lexicon, expected_female):
