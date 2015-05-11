@@ -69,6 +69,10 @@ class ChickSexer:
         self._females_file.close()
         self._males_file.close()
 
+        # Print this line to avoid carriage return
+        output = 'Classification completed'
+        print(output, ' ' * (self._previous_output_len - len(output)))
+
     def show_stats(self):
         """
         Show stored stats.

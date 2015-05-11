@@ -3,6 +3,7 @@ import datetime
 import os
 
 from .classifier import ChickSexer
+from .trimmer import Trimmer
 
 
 BASE_DIR = os.path.dirname(__file__)
@@ -10,10 +11,25 @@ MIN_CONFIDENCE = 0.75
 
 
 def create_results_path(args):
-    path = '../data/' + ('faces' if args.faces else 'no-faces') + \
-           ('-surnames' if args.surnames else '-no-surnames') + '-confidence-' + str(args.confidence)
+    """
+    Create a directory to store all files.
+
+    Params:
+        args (argparse.Namespace): Execution arguments.
+
+    Return:
+        Path of the created directory.
+    """
+    exit()
+    path = '../data/'
+    path += 'f' if args.faces else 'nf'
+    path += '-s' if args.surnames else '-ns'
+    path += '-c' + str(args.confidence)
+    path += '-ro' if args.remove_outliers else '-nro'
     path = os.path.join(BASE_DIR, path, str(datetime.datetime.now().timestamp()))
+
     os.makedirs(path)
+
     return path
 
 
@@ -30,7 +46,8 @@ def parse_arguments():
     parser.add_argument('--confidence', metavar='N', type=float, default=0.75,
                         help="minimal confidence for a valid recognition (default=0.75)")
     parser.add_argument('--surnames', action='store_true', help='require fullnames (at least one surname)')
-    parser.add_argument('--overwrite', action='store_true', help='overwrite results directory if exists')
+    parser.add_argument('--remove-outliers', action='store_true',
+                        help='remove outliers before generate training and test datasets')
 
     return parser.parse_args()
 
@@ -62,6 +79,11 @@ def main():
 
     classifier = ChickSexer()
     classifier.classify(args.dataset, results_path, args.faces, args.confidence, args.surnames)
-    classifier.show_stats()
+
+    trimmer = Trimmer(results_path)
+    if args.remove_outliers:
+        trimmer.remove_outliers()
+
+    trimmer.split_datasets(0.8)
 
 
