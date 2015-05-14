@@ -277,4 +277,9 @@ def main():
     males_pr, males_ex = test_lexicon(os.path.join(results_path, 'males-test.tsv'), lexicon, False)
     persist_test_results(results_path, females_pr, females_ex, males_pr, males_ex)
 
+    os.remove(os.path.join(results_path, 'females-training.tsv'))
+    os.remove(os.path.join(results_path, 'females-test.tsv'))
+    os.remove(os.path.join(results_path, 'males-training.tsv'))
+    os.remove(os.path.join(results_path, 'males-test.tsv'))
+
 
