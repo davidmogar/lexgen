@@ -15,7 +15,7 @@ from .utils import rootLogLikelihoodRatio
 BASE_DIR = os.path.dirname(__file__)
 MIN_CONFIDENCE = 0.75
 
-normalizr = Normalizr()
+normalizr = Normalizr('es')
 exclusions = set([u'\N{LATIN CAPITAL LETTER N WITH TILDE}', u'\N{LATIN SMALL LETTER N WITH TILDE}',
                                   u'\N{LATIN CAPITAL LETTER C WITH CEDILLA}', u'\N{LATIN SMALL LETTER C WITH CEDILLA}'])
 normalizations = [
@@ -23,8 +23,9 @@ normalizations = [
     'remove_stop_words',
     'remove_accent_marks',
     ('replace_emojis', {'replacement': ' '}),
-    ('replace_symbols', {'excluded': exclusions, 'replacement': ' '}),
     ('replace_punctuation', {'replacement': ' '}),
+    ('replace_symbols', {'format': 'NFKC', 'excluded': set(['ñ', 'Ñ', 'ç', 'Ç']), 'replacement': ' '}),
+    ('remove_accent_marks', {'excluded': set([u'\N{COMBINING TILDE}', u'\N{COMBINING CEDILLA}'])}),
     'remove_extra_whitespaces',
 ]
 

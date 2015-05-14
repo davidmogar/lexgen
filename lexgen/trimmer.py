@@ -33,6 +33,8 @@ class Trimmer:
         print('Trimming datasets')
         self._split_dataset(self._females, os.path.join(self._datasets_path, 'females.tsv'), training_set_percentage)
         self._split_dataset(self._males, os.path.join(self._datasets_path, 'males.tsv'), training_set_percentage)
+        os.remove(os.path.join(self._datasets_path, 'females.tsv'))
+        os.remove(os.path.join(self._datasets_path, 'males.tsv'))
 
     def _load_users_stats(self):
         """
