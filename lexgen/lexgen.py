@@ -19,8 +19,8 @@ normalizr = Normalizr('es')
 normalizations = [
     ('replace_urls', {'replacement': ' '}),
     ('replace_emojis', {'replacement': ' '}),
-    ('replace_punctuation', {'replacement': ' '}),
     ('replace_symbols', {'format': 'NFKC', 'excluded': set(['ñ', 'Ñ', 'ç', 'Ç']), 'replacement': ' '}),
+    ('replace_punctuation', {'replacement': ' '}),
     'remove_stop_words',
     'remove_extra_whitespaces',
     ('remove_accent_marks', {'excluded': set([u'\N{COMBINING TILDE}', u'\N{COMBINING CEDILLA}'])})
