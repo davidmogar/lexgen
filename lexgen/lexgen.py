@@ -16,17 +16,14 @@ BASE_DIR = os.path.dirname(__file__)
 MIN_CONFIDENCE = 0.75
 
 normalizr = Normalizr('es')
-exclusions = set([u'\N{LATIN CAPITAL LETTER N WITH TILDE}', u'\N{LATIN SMALL LETTER N WITH TILDE}',
-                                  u'\N{LATIN CAPITAL LETTER C WITH CEDILLA}', u'\N{LATIN SMALL LETTER C WITH CEDILLA}'])
 normalizations = [
     ('replace_urls', {'replacement': ' '}),
-    'remove_stop_words',
-    'remove_accent_marks',
     ('replace_emojis', {'replacement': ' '}),
     ('replace_punctuation', {'replacement': ' '}),
     ('replace_symbols', {'format': 'NFKC', 'excluded': set(['ñ', 'Ñ', 'ç', 'Ç']), 'replacement': ' '}),
-    ('remove_accent_marks', {'excluded': set([u'\N{COMBINING TILDE}', u'\N{COMBINING CEDILLA}'])}),
+    'remove_stop_words',
     'remove_extra_whitespaces',
+    ('remove_accent_marks', {'excluded': set([u'\N{COMBINING TILDE}', u'\N{COMBINING CEDILLA}'])})
 ]
 
 
@@ -130,7 +127,7 @@ def get_word_frequencies(dataset):
         for line in file:
             fields = line.split('\t')
             if len(fields) == 3:
-                for word in normalizr.normalize(fields[2].lower(), normalizations).split():
+                for word in normalizr.normalize(fields[2].lower().replace('\n', ''), normalizations).split():
                     total_words += 1
                     word_frequencies[word] += 1
 
@@ -215,7 +212,7 @@ def test_lexicon(dataset, lexicon, expected_female):
             fields = line.split('\t')
             if len(fields) == 3:
                 female_words, male_words = 0, 0
-                for word in normalizr.normalize(fields[2].lower(), normalizations).split():
+                for word in normalizr.normalize(fields[2].lower().replace('\n', ''), normalizations).split():
                     if word in lexicon:
                         if lexicon[word] > 0:
                             female_words += 1
