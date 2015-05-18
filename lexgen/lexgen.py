@@ -177,16 +177,16 @@ def persist_test_results(path, females_pr, females_ex, males_pr, males_ex):
     Path:
         path (string): Path to results directory.
         females_pr (float): Calculated female recognition precision.
-        females_ex (float): Calculated female recognition exhaustiveness.
+        females_ex (float): Calculated female recognition recall.
         males_pr (float): Calculated male recognition precision.
-        males_ex (float): Calculated male recognition exhaustiveness.
+        males_ex (float): Calculated male recognition recall.
     """
     print('Persisting test results')
     results = collections.OrderedDict()
     results['females_precision'] = females_pr
-    results['females_exhaustiveness'] = females_ex
+    results['females_recall'] = females_ex
     results['males_precision'] = males_pr
-    results['males_exhaustiveness'] = males_ex
+    results['males_recall'] = males_ex
 
     with open(os.path.join(path, '../..', 'tests.tsv'), 'a+', encoding='utf-8') as file:
         path = os.path.normpath(path).replace('\\', '/')
@@ -195,7 +195,7 @@ def persist_test_results(path, females_pr, females_ex, males_pr, males_ex):
 
 def test_lexicon(dataset, lexicon, expected_female):
     """
-    Test a lexicon against the given dataset calculating its precision and exhaustiveness.
+    Test a lexicon against the given dataset calculating its precision and recall.
 
     Params:
         dataset (string): Path to the dataset to use on this test.
@@ -203,7 +203,7 @@ def test_lexicon(dataset, lexicon, expected_female):
         expected_female (boolean): A boolean value indicating if female tweets are expected.
 
     Returns:
-        The precision and exhaustiveness of this lexicon against the given dataset.
+        The precision and recall of this lexicon against the given dataset.
     """
     female_tweets, male_tweets, unclassified = 0, 0, 0
 
@@ -228,9 +228,9 @@ def test_lexicon(dataset, lexicon, expected_female):
 
     classified = female_tweets + male_tweets
     precision = (female_tweets if expected_female else male_tweets) / classified
-    exhaustiveness = classified / (classified + unclassified)
+    recall = (female_tweets if expected_female else male_tweets) / (classified + unclassified)
 
-    return precision, exhaustiveness
+    return precision, recall
 
 
 def validate(args):
